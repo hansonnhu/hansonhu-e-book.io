@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的電子書櫃</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --wood-dark: #2a1808;
+    --wood-mid:  #4a2c14;
+    --wood-light:#5a3b22;
+    --paper:     #f4e8d4;
+    --gold:      #c9a76d;
+  }
+
+  html, body {
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    background: radial-gradient(ellipse at top, #4a3520 0%, #2a1c10 60%, #15100a 100%);
+    font-family: 'Noto Serif TC', 'Songti TC', 'Georgia', serif;
+    color: var(--paper);
+    padding: 20px 12px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ============ HEADER ============ */
+  header {
+    width: 100%;
+    max-width: 1260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-size: clamp(22px, 4vw, 30px);
+    letter-spacing: clamp(3px, 1vw, 6px);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    text-align: center;
+  }
+  .subtitle {
+    font-size: 12px;
+    color: #c9b48a;
+    letter-spacing: 2px;
+    opacity: 0.85;
+    margin-top: -4px;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    width: 100%;
+  }
+  .toolbar button {
+    background: linear-gradient(180deg, #5a3b22, #3d2614);
+    color: var(--paper);
+    border: 1px solid #2a1808;
+    padding: 7px 14px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .toolbar button:hover {
+    background: linear-gradient(180deg, #6a4830, #4d3220);
+    transform: translateY(-1px);
+  }
+  .toolbar button.active {
+    background: linear-gradient(180deg, #a67843, #74532a);
+    box-shadow: 0 0 0 2px var(--gold), inset 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .toolbar button.linked {
+    background: linear-gradient(180deg, #4a7c3a, #2d5524);
+    border-color: #1d3818;
+    box-shadow: 0 0 0 2px rgba(150, 220, 120, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .toolbar button.linked:hover {
+    background: linear-gradient(180deg, #5a8c4a, #3d6534);
+  }
+  .status-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    background: rgba(201,167,109,0.15);
+    color: var(--gold);
+    margin-left: 6px;
+  }
+  .status-tag.dirty {
+    background: rgba(231,140,80,0.25);
+    color: #ffba80;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* ============ MAIN LAYOUT (shelf + help) ============ */
+  .main-layout {
+    display: flex;
+    gap: 24px;
+    width: 100%;
+    max-width: 1260px;
+    align-items: flex-start;
+  }
+  .shelf-column {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .help-column {
+    flex: 0 0 280px;
+    position: sticky;
+    top: 16px;
+  }
+  @media (max-width: 1080px) {
+    .main-layout { flex-direction: column; align-items: center; }
+    .help-column { flex: 1 1 auto; position: static; width: 100%; max-width: 920px; }
+  }
+
+  /* ============ HELP PANEL ============ */
+  .help-panel {
+    background: linear-gradient(135deg, #f4e6c8 0%, #e6d3a8 100%);
+    color: #3a2410;
+    padding: 22px 22px 24px;
+    border-radius: 5px;
+    box-shadow:
+      0 14px 32px rgba(0,0,0,0.5),
+      inset 0 0 0 1px rgba(139,94,42,0.25),
+      inset 0 0 22px rgba(180,140,80,0.15);
+    border-left: 5px solid #8b5e2a;
+    position: relative;
+    font-family: 'Noto Serif TC', 'Songti TC', 'Georgia', serif;
+  }
+  .help-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(139,94,42,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(139,94,42,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .help-panel h2 {
+    font-size: 16px;
+    letter-spacing: 4px;
+    color: #4a2c14;
+    text-align: center;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .help-panel .help-sub {
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: #8b5e2a;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  .help-panel h3 {
+    font-size: 13px;
+    color: #6a3f1a;
+    letter-spacing: 2px;
+    margin: 16px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed rgba(139,94,42,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .help-panel h3:first-of-type { margin-top: 0; }
+  .help-panel ol, .help-panel ul {
+    padding-left: 0;
+    list-style: none;
+    counter-reset: step;
+    margin-bottom: 6px;
+  }
+  .help-panel ol li {
+    counter-increment: step;
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 4px 0 4px 26px;
+    position: relative;
+    color: #3a2410;
+  }
+  .help-panel ol li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 5px;
+    width: 18px; height: 18px;
+    background: #8b5e2a;
+    color: #f4e6c8;
+    border-radius: 50%;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  .help-panel ul li {
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 3px 0 3px 14px;
+    position: relative;
+    color: #3a2410;
+  }
+  .help-panel ul li::before {
+    content: '❦';
+    position: absolute;
+    left: 0;
+    color: #8b5e2a;
+    font-size: 10px;
+    top: 5px;
+  }
+  .help-panel kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: rgba(139,94,42,0.18);
+    border: 1px solid rgba(139,94,42,0.3);
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 11px;
+    color: #4a2c14;
+    margin: 0 1px;
+  }
+  .help-panel .help-note {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: rgba(139,94,42,0.1);
+    border-left: 3px solid #8b5e2a;
+    border-radius: 3px;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #5a3a1a;
+  }
+  .help-panel .help-foot {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #8b5e2a;
+    opacity: 0.7;
+  }
+
+  /* ============ BOOKSHELF ============ */
+  .bookshelf {
+    position: relative;
+    width: 100%;
+    max-width: 920px;
+    background: linear-gradient(180deg, #5a3b22 0%, #3d2614 100%);
+    border: 4px solid var(--wood-dark);
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.7), inset 0 0 30px rgba(0,0,0,0.3);
+    transition: filter 0.4s ease;
+  }
+  .bookshelf.dimmed { filter: brightness(0.4) blur(1px); }
+  .bookshelf::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0 2px, transparent 2px 8px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 14px);
+    pointer-events: none;
+    border-radius: 4px;
+  }
+
+  .shelf {
+    position: relative;
+    height: clamp(120px, 18vw, 175px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 0 10px;
+    gap: clamp(1px, 0.3vw, 3px);
+    border-bottom: clamp(8px, 1.5vw, 14px) solid var(--wood-dark);
+    background: linear-gradient(180deg, transparent 0%, transparent 92%, #1a0e05 100%);
+    box-shadow: inset 0 12px 18px -10px rgba(0,0,0,0.7), inset 0 -4px 8px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .shelf:last-child { border-bottom: none; }
+  .shelf::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: calc(-1 * clamp(8px, 1.5vw, 14px));
+    height: clamp(8px, 1.5vw, 14px);
+    background: linear-gradient(180deg, var(--wood-mid) 0%, var(--wood-dark) 50%, #1a0e05 100%);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+  }
+
+  /* ============ BOOK ============ */
+  .book {
+    position: relative;
+    cursor: pointer;
+    transform-origin: bottom center;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), filter 0.3s ease;
+    flex: 0 1 auto;
+  }
+  .book:hover {
+    transform: translateY(-10px);
+    filter: brightness(1.15);
+  }
+
+  .spine {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 2px 2px 1px 1px;
+    box-shadow: inset -3px 0 4px rgba(0,0,0,0.35), inset 3px 0 4px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .spine::before {
+    content: '';
+    position: absolute;
+    top: 8px; bottom: 8px;
+    left: 4px; right: 4px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    pointer-events: none;
+  }
+  .spine-band {
+    position: absolute;
+    left: 0; right: 0;
+    height: 3px;
+    opacity: 0.7;
+  }
+  .spine-band.top { top: 10px; }
+  .spine-band.bot { bottom: 10px; }
+
+  .spine-title {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: clamp(8px, 1.3vw, 11px);
+    letter-spacing: clamp(1px, 0.4vw, 3px);
+    color: rgba(255, 245, 220, 0.92);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+    padding: 8px 0;
+    user-select: none;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .book .delete-x {
+    position: absolute;
+    top: -8px; right: -8px;
+    width: 22px; height: 22px;
+    background: #c33;
+    color: white;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    z-index: 5;
+    line-height: 1;
+  }
+  body.edit-mode .book .delete-x { display: flex; }
+  body.edit-mode .book .spine {
+    box-shadow: inset -3px 0 4px rgba(0,0,0,0.35), inset 3px 0 4px rgba(255,255,255,0.1), 0 0 0 2px rgba(255,200,100,0.6);
+  }
+  body.edit-mode .book:hover .spine {
+    box-shadow: inset -3px 0 4px rgba(0,0,0,0.35), inset 3px 0 4px rgba(255,255,255,0.1), 0 0 0 2px var(--gold);
+  }
+
+  .bookend {
+    width: 6px;
+    height: 78%;
+    background: linear-gradient(180deg, #6a3210 0%, #3a1808 100%);
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    margin: 0 3px;
+    flex: 0 0 6px;
+  }
+
+  /* ============ STAGE / LIFTED BOOK ============ */
+  .stage {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    perspective: 1800px;
+    z-index: 100;
+  }
+  .stage.active { pointer-events: auto; }
+
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.88) 100%);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .stage.active .backdrop { opacity: 1; }
+
+  .lifted-book {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform-style: preserve-3d;
+    transition: transform 0.9s cubic-bezier(0.45, 0, 0.2, 1);
+  }
+  .face {
+    position: absolute;
+    top: 0; left: 0;
+    backface-visibility: hidden;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .face.front {
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8), inset 0 0 40px rgba(0,0,0,0.2);
+  }
+  .cover {
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 28px 22px;
+    position: relative;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: 14px; bottom: 14px; left: 14px; right: 14px;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .cover-top { text-align: center; font-size: 11px; letter-spacing: 4px; margin-top: 6px; }
+  .cover-title {
+    font-size: clamp(20px, 3.5vw, 28px);
+    color: #fff;
+    text-align: center;
+    line-height: 1.3;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin: 14px 0;
+  }
+  .cover-ornament { text-align: center; font-size: 24px; margin: 6px 0; }
+  .cover-author { text-align: center; color: rgba(255,255,255,0.9); font-size: 14px; letter-spacing: 3px; margin-bottom: 6px; }
+
+  /* ============ INFO PANEL ============ */
+  .info-panel {
+    position: fixed;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%) translateX(120%);
+    width: 320px;
+    max-width: calc(100vw - 60px);
+    background: linear-gradient(180deg, #f7eedb 0%, #ede0c2 100%);
+    color: #2a1808;
+    padding: 26px 24px;
+    border-radius: 4px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    transition: transform 0.7s cubic-bezier(0.45, 0, 0.2, 1);
+    border-left: 4px solid #8b5e2a;
+    z-index: 200;
+  }
+  .info-panel.active { transform: translateY(-50%) translateX(0); }
+  .info-panel h2 { font-size: 20px; margin-bottom: 6px; color: #4a2c14; }
+  .info-panel .author { font-size: 13px; color: #8b5e2a; font-style: italic; margin-bottom: 12px; letter-spacing: 1px; }
+  .info-panel .meta { display: flex; gap: 10px; margin-bottom: 12px; font-size: 11px; color: #6a4525; flex-wrap: wrap; }
+  .info-panel .meta span { background: rgba(139,94,42,0.15); padding: 3px 8px; border-radius: 3px; }
+  .info-panel p { font-size: 13px; line-height: 1.7; color: #3a2410; max-height: 200px; overflow-y: auto; }
+  .info-panel .panel-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .info-panel .panel-actions button {
+    flex: 1;
+    background: #8b5e2a;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  .info-panel .panel-actions button.danger { background: #a83232; }
+  .info-panel .panel-actions button:hover { filter: brightness(1.15); }
+  .info-panel .close-hint { margin-top: 14px; font-size: 11px; color: #8b5e2a; text-align: center; letter-spacing: 2px; opacity: 0.7; }
+
+  @media (max-width: 720px) {
+    .info-panel {
+      right: 50%;
+      bottom: 16px;
+      top: auto;
+      transform: translate(50%, 120%);
+      width: calc(100vw - 32px);
+      padding: 18px 18px;
+    }
+    .info-panel.active { transform: translate(50%, 0); }
+    .info-panel p { max-height: 100px; }
+  }
+
+  /* ============ FORM MODAL ============ */
+  .form-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .form-overlay.active { display: flex; }
+  .form-card {
+    background: linear-gradient(180deg, #f7eedb 0%, #ede0c2 100%);
+    color: #2a1808;
+    padding: 28px;
+    border-radius: 6px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 92vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    border-left: 5px solid #8b5e2a;
+  }
+  .form-card h2 { color: #4a2c14; margin-bottom: 16px; }
+  .form-card label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #4a2c14;
+    letter-spacing: 1px;
+  }
+  .form-card input[type=text],
+  .form-card input[type=number],
+  .form-card textarea {
+    width: 100%;
+    margin-top: 4px;
+    padding: 8px 10px;
+    border: 1px solid #c9a76d;
+    background: #fff8e8;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #2a1808;
+  }
+  .form-card textarea { min-height: 80px; resize: vertical; }
+  .color-row { display: flex; gap: 16px; }
+  .color-row label { flex: 1; }
+  .form-card input[type=color] {
+    width: 100%;
+    height: 36px;
+    margin-top: 4px;
+    border: 1px solid #c9a76d;
+    border-radius: 3px;
+    cursor: pointer;
+    background: #fff8e8;
+  }
+  .form-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+  .form-buttons button {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+  .form-buttons .cancel { background: #ddd; color: #555; }
+  .form-buttons .save { background: #8b5e2a; color: white; }
+  .form-buttons button:hover { filter: brightness(1.1); }
+
+  /* ============ NOTIFICATIONS / BANNER ============ */
+  .banner {
+    width: 100%;
+    max-width: 1260px;
+    background: rgba(201,167,109,0.15);
+    border: 1px solid rgba(201,167,109,0.4);
+    color: var(--gold);
+    padding: 10px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-bottom: 12px;
+    display: none;
+    letter-spacing: 1px;
+  }
+  .banner.show { display: block; }
+  .banner.actionable {
+    cursor: pointer;
+    background: rgba(231, 180, 80, 0.18);
+    border-color: rgba(231, 180, 80, 0.5);
+    color: #ffd47a;
+  }
+  .banner.actionable:hover { background: rgba(231, 180, 80, 0.28); }
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #2a1808;
+    color: var(--paper);
+    padding: 12px 24px;
+    border-radius: 4px;
+    border: 1px solid var(--gold);
+    z-index: 500;
+    font-size: 13px;
+    letter-spacing: 1px;
+    opacity: 0;
+    transition: all 0.4s ease;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  .footer-hint { margin-top: 16px; font-size: 11px; color: #8b6e44; letter-spacing: 3px; opacity: 0.7; text-align: center; }
+
+  /* ============ DRAG TO REORDER ============ */
+  .book {
+    touch-action: none;
+    cursor: grab;
+  }
+  body.dragging-active {
+    cursor: grabbing;
+    user-select: none;
+  }
+  body.dragging-active .book { cursor: grabbing; }
+  .book.dragging-source .spine {
+    opacity: 0.22;
+    filter: grayscale(0.4);
+    box-shadow: inset 0 0 0 1px rgba(201,167,109,0.5), 0 0 8px rgba(201,167,109,0.25) !important;
+  }
+  .book.dragging-source { pointer-events: none; }
+
+  .ghost-book {
+    position: fixed;
+    pointer-events: none;
+    z-index: 999;
+    filter: drop-shadow(0 18px 30px rgba(0,0,0,0.7)) brightness(1.15);
+    will-change: transform, left, top;
+  }
+  .ghost-book .delete-x { display: none !important; }
+
+  .drop-indicator {
+    position: fixed;
+    width: 5px;
+    background: linear-gradient(180deg,
+      transparent 0%,
+      var(--gold) 12%,
+      #fff8d0 50%,
+      var(--gold) 88%,
+      transparent 100%);
+    box-shadow: 0 0 14px var(--gold), 0 0 28px rgba(201,167,109,0.6);
+    pointer-events: none;
+    z-index: 998;
+    border-radius: 3px;
+    display: none;
+    transition: left 0.14s ease, top 0.14s ease, height 0.14s ease;
+  }
+  .drop-indicator.active { display: block; animation: dropPulse 1s ease-in-out infinite; }
+  @keyframes dropPulse {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 1; transform: scaleY(1.04); }
+  }
+  .empty-shelf {
+    width: 100%;
+    text-align: center;
+    color: rgba(255,235,200,0.4);
+    font-size: 12px;
+    align-self: center;
+    padding: 40px 0;
+    letter-spacing: 4px;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>我 的 書 櫃</h1>
+    <div class="subtitle">— A Personal Library —</div>
+    <div class="toolbar">
+      <button id="btnView" class="active">📖 閱讀模式</button>
+      <button id="btnEdit">✎ 編輯模式</button>
+      <button id="btnAdd">＋ 新增書本</button>
+      <button id="btnBind">📎 連結 CSV</button>
+      <button id="btnImport">⬆ 載入 CSV</button>
+      <button id="btnExport">⬇ 匯出 CSV</button>
+      <span id="statusTag" class="status-tag">資料載入中…</span>
+      <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="main-layout">
+    <div class="shelf-column">
+      <div class="bookshelf" id="bookshelf">
+        <div class="shelf" data-shelf="0"></div>
+        <div class="shelf" data-shelf="1"></div>
+        <div class="shelf" data-shelf="2"></div>
+        <div class="shelf" data-shelf="3"></div>
+      </div>
+      <div class="footer-hint" id="footerHint">點 擊 翻 閱　|　拖 移 排 序</div>
+    </div>
+
+    <aside class="help-column">
+      <div class="help-panel">
+        <h2>使 用 指 南</h2>
+        <div class="help-sub">— Quick Start —</div>
+
+        <h3>📎 第一次使用</h3>
+        <ol>
+          <li>點上方「<kbd>📎 連結 CSV</kbd>」按鈕</li>
+          <li>在彈出視窗選擇本資料夾的 <kbd>books.csv</kbd></li>
+          <li>瀏覽器詢問權限時點「儲存變更」授權寫入</li>
+        </ol>
+        <div class="help-note">
+          連結後按鈕變綠色「✓ 已連結」。<br>
+          之後 <b>拖移、編輯、刪除</b> 都會即時寫回 books.csv 檔案，無需手動匯出。
+        </div>
+
+        <h3>📖 閱讀</h3>
+        <ul>
+          <li><b>點書本</b>：書本浮起翻面，看詳細資料</li>
+          <li><b>拖移書本</b>：變更陳列順序（自動存檔）</li>
+          <li>按 <kbd>Esc</kbd> 或點背景闔上</li>
+        </ul>
+
+        <h3>✎ 編輯</h3>
+        <ul>
+          <li>點「<kbd>✎ 編輯模式</kbd>」切換</li>
+          <li><b>點書本</b>：修改書名、作者、顏色等</li>
+          <li><b>點紅色 ×</b>：刪除書本</li>
+          <li>「<kbd>＋ 新增書本</kbd>」加入新書</li>
+        </ul>
+
+        <h3>⚠ 不支援自動寫檔時</h3>
+        <ul>
+          <li>Safari / Firefox 無法直接寫檔</li>
+          <li>請用「<kbd>⬆ 載入 CSV</kbd>」手動載入</li>
+          <li>變更後「<kbd>⬇ 匯出 CSV</kbd>」覆蓋原檔</li>
+        </ul>
+        <div class="help-note">
+          建議使用 <b>Chrome / Edge / Brave / Arc</b> 等 Chromium 瀏覽器以啟用完整功能。
+        </div>
+
+        <div class="help-foot">— 翻 開 你 的 書 櫃 —</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- drag drop indicator -->
+  <div class="drop-indicator" id="dropIndicator"></div>
+
+  <!-- 3D lifted book view -->
+  <div class="stage" id="stage">
+    <div class="backdrop" id="backdrop"></div>
+  </div>
+
+  <!-- Info panel -->
+  <div class="info-panel" id="infoPanel">
+    <h2 id="ipTitle"></h2>
+    <div class="author" id="ipAuthor"></div>
+    <div class="meta">
+      <span id="ipYear"></span>
+      <span id="ipGenre"></span>
+    </div>
+    <p id="ipDesc"></p>
+    <div class="panel-actions">
+      <button id="ipEdit">✎ 編輯</button>
+      <button id="ipDelete" class="danger">🗑 刪除</button>
+    </div>
+    <div class="close-hint">點 擊 背 景 闔 上</div>
+  </div>
+
+  <!-- Edit / Add form modal -->
+  <div class="form-overlay" id="formOverlay">
+    <div class="form-card">
+      <h2 id="formTitle">新增書本</h2>
+      <form id="bookForm">
+        <input type="hidden" name="id">
+        <label>書名
+          <input type="text" name="title" required maxlength="20">
+        </label>
+        <label>作者
+          <input type="text" name="author" required>
+        </label>
+        <label>年份
+          <input type="text" name="year" required maxlength="10">
+        </label>
+        <label>類別
+          <input type="text" name="genre" required>
+        </label>
+        <label>簡介
+          <textarea name="description" required></textarea>
+        </label>
+        <div class="color-row">
+          <label>書脊顏色
+            <input type="color" name="spine" value="#7d2a2a">
+          </label>
+          <label>裝飾顏色
+            <input type="color" name="accent" value="#c9a76d">
+          </label>
+        </div>
+        <div class="form-buttons">
+          <button type="button" class="cancel" id="formCancel">取消</button>
+          <button type="submit" class="save">儲存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ================== STATE ==================
+let books = [];
+let isEditMode = false;
+let isDirty = false; // unsaved changes vs. last loaded/exported CSV
+let currentBookId = null;
+
+const LS_KEY = 'bookshelf-data-v1';
+const LS_DIRTY = 'bookshelf-dirty-v1';
+
+// File System Access — only available in Chromium browsers (Chrome, Edge, Brave, Arc)
+const SUPPORTS_FS = typeof window.showOpenFilePicker === 'function';
+let fileHandle = null;
+
+// ================== CSV PARSER ==================
+function parseCSV(text) {
+  // robust CSV parser: handles quoted fields, embedded commas, doubled quotes ("") and \r\n
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  text = text.replace(/^﻿/, ''); // strip BOM
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i+1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += c;
+      }
+    } else {
+      if (c === '"') { inQuotes = true; }
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else { field += c; }
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  if (!rows.length) return [];
+  const header = rows[0].map(h => h.trim());
+  return rows.slice(1).filter(r => r.length && r.some(c => c !== ''))
+    .map(r => {
+      const obj = {};
+      header.forEach((k, i) => obj[k] = (r[i] ?? '').trim());
+      return obj;
+    });
+}
+
+function serializeCSV(records) {
+  const cols = ['id','title','author','year','genre','description','spine','accent'];
+  const esc = v => {
+    v = String(v ?? '');
+    if (/[",\n\r]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
+    return v;
+  };
+  const lines = [cols.join(',')];
+  for (const b of records) {
+    lines.push(cols.map(c => esc(b[c])).join(','));
+  }
+  return lines.join('\n') + '\n';
+}
+
+// ================== INDEXEDDB (for persisting file handle) ==================
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('bookshelf', 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('handles')) db.createObjectStore('handles');
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbPut(key, value) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('handles', 'readwrite');
+    tx.objectStore('handles').put(value, key);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('handles', 'readonly');
+    const r = tx.objectStore('handles').get(key);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbDel(key) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('handles', 'readwrite');
+    tx.objectStore('handles').delete(key);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
+// ================== FILE SYSTEM ACCESS ==================
+function normalizeRecord(p, i) {
+  if (!p.id) p.id = String(i + 1);
+  if (!p.spine) p.spine = '#7d2a2a';
+  if (!p.accent) p.accent = '#c9a76d';
+  return p;
+}
+
+async function readHandle(handle) {
+  const file = await handle.getFile();
+  const text = await file.text();
+  const parsed = parseCSV(text);
+  parsed.forEach(normalizeRecord);
+  return parsed;
+}
+
+let writeQueue = Promise.resolve();
+function syncToBoundFile() {
+  if (!fileHandle) return writeQueue;
+  writeQueue = writeQueue.then(async () => {
+    if (!fileHandle) return;
+    try {
+      const writable = await fileHandle.createWritable();
+      await writable.write(serializeCSV(books));
+      await writable.close();
+      isDirty = false;
+      localStorage.setItem(LS_DIRTY, '0');
+      updateStatus(`已即時寫回 books.csv（${books.length} 本）`);
+    } catch (e) {
+      console.warn('Auto-sync failed:', e);
+      fileHandle = null;
+      isDirty = true;
+      localStorage.setItem(LS_DIRTY, '1');
+      await idbDel('csv').catch(()=>{});
+      updateBindUI();
+      updateStatus();
+      toast('自動寫回失敗，連結已斷開：' + (e.message || e.name || ''));
+    }
+  });
+  return writeQueue;
+}
+
+async function pickAndBindCSV() {
+  if (!SUPPORTS_FS) {
+    alert('此瀏覽器不支援直接寫檔功能。\n請使用 Chrome / Edge / Brave 等 Chromium 瀏覽器，才能將變更直接寫回 books.csv。\n\n目前仍可用「⬇ 匯出 CSV」手動覆蓋檔案。');
+    return false;
+  }
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'CSV 檔案', accept: { 'text/csv': ['.csv'] } }],
+      multiple: false
+    });
+    const opts = { mode: 'readwrite' };
+    let perm = await handle.queryPermission(opts);
+    if (perm !== 'granted') perm = await handle.requestPermission(opts);
+    if (perm !== 'granted') { toast('未授權寫入'); return false; }
+
+    const parsed = await readHandle(handle);
+    if (parsed.length) books = parsed;
+    fileHandle = handle;
+    isDirty = false;
+    localStorage.setItem(LS_KEY, JSON.stringify(books));
+    localStorage.setItem(LS_DIRTY, '0');
+    await idbPut('csv', handle).catch(()=>{});
+    updateBindUI();
+    updateStatus(`已連結 books.csv（${books.length} 本，自動同步中）`);
+    hideBanner();
+    renderBookshelf();
+    toast('已連結 books.csv，變更將即時寫回');
+    return true;
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      console.error(e);
+      toast('連結失敗：' + (e.message || e.name || ''));
+    }
+    return false;
+  }
+}
+
+async function unbindCSV() {
+  fileHandle = null;
+  await idbDel('csv').catch(()=>{});
+  updateBindUI();
+  updateStatus();
+  toast('已解除連結，後續變更需手動匯出');
+}
+
+async function tryRestoreHandle() {
+  if (!SUPPORTS_FS) return 'unsupported';
+  try {
+    const handle = await idbGet('csv');
+    if (!handle) return 'none';
+    const opts = { mode: 'readwrite' };
+    const status = await handle.queryPermission(opts);
+    if (status === 'granted') {
+      const parsed = await readHandle(handle);
+      if (parsed.length) books = parsed;
+      fileHandle = handle;
+      isDirty = false;
+      localStorage.setItem(LS_KEY, JSON.stringify(books));
+      localStorage.setItem(LS_DIRTY, '0');
+      updateBindUI();
+      updateStatus(`已自動連結 books.csv（${books.length} 本）`);
+      return 'restored';
+    }
+    // require user gesture to re-grant permission
+    showBannerAction('🔗 已記住 books.csv，點此恢復自動寫回', async () => {
+      const result = await handle.requestPermission(opts);
+      if (result === 'granted') {
+        const parsed = await readHandle(handle);
+        if (parsed.length) books = parsed;
+        fileHandle = handle;
+        isDirty = false;
+        localStorage.setItem(LS_KEY, JSON.stringify(books));
+        localStorage.setItem(LS_DIRTY, '0');
+        updateBindUI();
+        updateStatus(`已連結 books.csv（${books.length} 本）`);
+        hideBanner();
+        renderBookshelf();
+        toast('已恢復連結');
+      } else {
+        toast('授權被拒');
+        await idbDel('csv').catch(()=>{});
+      }
+    });
+    return 'needs-permission';
+  } catch (e) {
+    console.warn('Restore handle failed:', e);
+    await idbDel('csv').catch(()=>{});
+    return 'error';
+  }
+}
+
+function updateBindUI() {
+  const btn = document.getElementById('btnBind');
+  if (!btn) return;
+  if (!SUPPORTS_FS) {
+    btn.style.display = 'none';
+    return;
+  }
+  if (fileHandle) {
+    btn.textContent = '✓ 已連結 (點此解除)';
+    btn.classList.add('linked');
+  } else {
+    btn.textContent = '📎 連結 CSV';
+    btn.classList.remove('linked');
+  }
+}
+
+// ================== DATA LOADING ==================
+async function loadInitialData() {
+  updateBindUI();
+
+  // 1) Try to restore previously-bound file (auto-sync mode)
+  const r1 = await tryRestoreHandle();
+  if (r1 === 'restored') { renderBookshelf(); return; }
+
+  // 2) Otherwise prefer localStorage if it has unsaved edits
+  const lsDirty = localStorage.getItem(LS_DIRTY) === '1';
+  if (lsDirty) {
+    const cached = localStorage.getItem(LS_KEY);
+    if (cached) {
+      try {
+        books = JSON.parse(cached);
+        isDirty = true;
+        updateStatus();
+        if (SUPPORTS_FS && r1 !== 'needs-permission') {
+          showBannerAction('🔗 點「📎 連結 CSV」啟用即時寫回到 books.csv，否則僅暫存於本機。', () => pickAndBindCSV());
+        }
+        renderBookshelf();
+        return;
+      } catch(e) {}
+    }
+  }
+
+  // 3) Try fetch (works when served via HTTP)
+  try {
+    const r = await fetch('books.csv', { cache: 'no-cache' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const text = await r.text();
+    books = parseCSV(text);
+    books.forEach(normalizeRecord);
+    isDirty = false;
+    localStorage.setItem(LS_KEY, JSON.stringify(books));
+    localStorage.setItem(LS_DIRTY, '0');
+    updateStatus(`已載入 ${books.length} 本書`);
+    if (SUPPORTS_FS && r1 !== 'needs-permission') {
+      showBannerAction('🔗 點「📎 連結 CSV」啟用即時寫回到 books.csv（拖移／編輯／刪除會直接更新檔案）', () => pickAndBindCSV());
+    }
+    renderBookshelf();
+    return;
+  } catch(e) {
+    console.warn('fetch books.csv 失敗:', e);
+  }
+
+  // 4) localStorage cache (read-only)
+  const cached = localStorage.getItem(LS_KEY);
+  if (cached) {
+    try {
+      books = JSON.parse(cached);
+      isDirty = localStorage.getItem(LS_DIRTY) === '1';
+      updateStatus();
+      if (SUPPORTS_FS && r1 !== 'needs-permission') {
+        showBannerAction('🔗 無法自動讀取 books.csv。點此連結檔案以啟用即時寫回。', () => pickAndBindCSV());
+      } else if (!SUPPORTS_FS) {
+        showBanner('此瀏覽器不支援自動寫檔。請用「⬆ 載入 CSV」載入，變更後「⬇ 匯出 CSV」覆蓋檔案。');
+      }
+      renderBookshelf();
+      return;
+    } catch(e) {}
+  }
+
+  // 5) empty
+  books = [];
+  if (SUPPORTS_FS) {
+    showBannerAction('🔗 找不到資料，點此連結 books.csv 以載入並啟用即時寫回。', () => pickAndBindCSV());
+  } else {
+    showBanner('找不到 books.csv，請點「⬆ 載入 CSV」載入，或「＋ 新增書本」建立新書。');
+  }
+  updateStatus('尚無資料');
+  renderBookshelf();
+}
+
+function saveToLocal() {
+  localStorage.setItem(LS_KEY, JSON.stringify(books));
+  if (fileHandle) {
+    // bound to actual CSV file — write through immediately
+    isDirty = false;
+    localStorage.setItem(LS_DIRTY, '0');
+    syncToBoundFile(); // async, fire-and-forget
+  } else {
+    localStorage.setItem(LS_DIRTY, isDirty ? '1' : '0');
+  }
+}
+
+// ================== RENDER ==================
+function shade(hex, percent) {
+  if (!hex || hex[0] !== '#') return hex;
+  const num = parseInt(hex.slice(1), 16);
+  let r = (num >> 16) + percent;
+  let g = ((num >> 8) & 0x00FF) + percent;
+  let b = (num & 0x0000FF) + percent;
+  r = Math.max(0, Math.min(255, r));
+  g = Math.max(0, Math.min(255, g));
+  b = Math.max(0, Math.min(255, b));
+  return '#' + (r*65536 + g*256 + b).toString(16).padStart(6, '0');
+}
+
+function makeBookEl(book, shelfHeight) {
+  // size: book width 24~40px (responsive via clamp), height varies per book deterministically
+  // deterministic pseudo-random based on id so it stays consistent
+  const seed = (parseInt(book.id, 10) || book.title.length || 1);
+  const widthBase = 26 + ((seed * 13) % 18);      // 26-43
+  const heightFactor = 0.78;                       // 統一高度（最矮）
+  const h = Math.round(shelfHeight * heightFactor);
+  const w = widthBase;
+
+  const el = document.createElement('div');
+  el.className = 'book';
+  el.style.width = `clamp(18px, ${w/8}vw, ${w}px)`;
+  el.style.height = h + 'px';
+  el.dataset.id = book.id;
+
+  const spine = document.createElement('div');
+  spine.className = 'spine';
+  const c = book.spine || '#7d2a2a';
+  spine.style.background = `linear-gradient(180deg, ${c} 0%, ${shade(c, -25)} 50%, ${c} 100%)`;
+
+  const bandT = document.createElement('div'); bandT.className='spine-band top'; bandT.style.background = book.accent || '#c9a76d';
+  const bandB = document.createElement('div'); bandB.className='spine-band bot'; bandB.style.background = book.accent || '#c9a76d';
+  spine.appendChild(bandT); spine.appendChild(bandB);
+
+  const title = document.createElement('div');
+  title.className = 'spine-title';
+  const clean = (book.title || '').replace(/\s/g, '');
+  title.textContent = clean.length > 7 ? clean.slice(0, 7) : clean;
+  if (h < 110) title.style.fontSize = '8px';
+  spine.appendChild(title);
+  el.appendChild(spine);
+
+  // delete X
+  const dx = document.createElement('div');
+  dx.className = 'delete-x';
+  dx.textContent = '×';
+  dx.title = '刪除這本書';
+  dx.addEventListener('click', (e) => {
+    e.stopPropagation();
+    confirmDelete(book);
+  });
+  el.appendChild(dx);
+
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (suppressClickId === el.dataset.id) {
+      suppressClickId = null;
+      return;
+    }
+    if (isEditMode) openEditForm(book);
+    else openBookView(book);
+  });
+
+  el.addEventListener('pointerdown', (e) => {
+    if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+    if (e.target.classList.contains('delete-x')) return;
+    dragState = {
+      id: el.dataset.id,
+      el,
+      startX: e.clientX,
+      startY: e.clientY,
+      started: false,
+      ghost: null,
+      ghostOffsetX: 0,
+      ghostOffsetY: 0,
+      targetIdx: null
+    };
+  });
+
+  return el;
+}
+
+function renderBookshelf() {
+  const shelves = [...document.querySelectorAll('.shelf')];
+  shelves.forEach(s => s.innerHTML = '');
+  if (!books.length) {
+    shelves[0].innerHTML = '<div class="empty-shelf">書 櫃 空 蕩 蕩</div>';
+    document.getElementById('footerHint').textContent = '請載入 CSV 或新增書本';
+    return;
+  }
+  document.getElementById('footerHint').textContent = isEditMode
+    ? '點 擊 編 輯　|　拖 移 排 序　|　點 × 刪 除'
+    : '點 擊 翻 閱　|　拖 移 排 序';
+
+  // distribute books evenly across 4 shelves
+  const perShelf = Math.ceil(books.length / 4);
+  const shelfH = parseFloat(getComputedStyle(shelves[0]).height);
+  let idx = 0;
+  for (let s = 0; s < 4; s++) {
+    const shelf = shelves[s];
+    // optional bookend on alternating ends
+    if (s % 2 === 0) {
+      const be = document.createElement('div');
+      be.className = 'bookend';
+      shelf.appendChild(be);
+    }
+    for (let i = 0; i < perShelf && idx < books.length; i++, idx++) {
+      shelf.appendChild(makeBookEl(books[idx], shelfH));
+    }
+    if (s % 2 === 1) {
+      const be = document.createElement('div');
+      be.className = 'bookend';
+      shelf.appendChild(be);
+    }
+  }
+}
+
+// re-render on resize (debounced) to recompute book heights
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderBookshelf, 200);
+});
+
+// ================== BOOK VIEW (3D LIFT) ==================
+let currentLifted = null;
+const stage = document.getElementById('stage');
+const backdrop = document.getElementById('backdrop');
+const bookshelfEl = document.getElementById('bookshelf');
+const infoPanel = document.getElementById('infoPanel');
+
+function openBookView(book) {
+  if (currentLifted) return;
+  const bookEl = document.querySelector(`.book[data-id="${CSS.escape(String(book.id))}"]`);
+  if (!bookEl) return;
+  currentBookId = book.id;
+  bookshelfEl.classList.add('dimmed');
+  stage.classList.add('active');
+
+  const rect = bookEl.getBoundingClientRect();
+  const startX = rect.left + rect.width / 2;
+  const startY = rect.top + rect.height / 2;
+  const spineW = rect.width;
+  const spineH = rect.height;
+  const coverW = Math.max(180, spineW * 4.5);
+  const coverH = spineH * 1.05;
+
+  bookEl.style.opacity = '0';
+
+  const lifted = document.createElement('div');
+  lifted.className = 'lifted-book';
+  lifted.style.width = coverW + 'px';
+  lifted.style.height = coverH + 'px';
+  const initialX = startX - window.innerWidth/2;
+  const initialY = startY - window.innerHeight/2;
+  lifted.style.transform =
+    `translate(calc(${initialX}px - 50%), calc(${initialY}px - 50%))
+     rotateY(-90deg) translateZ(${coverW/2}px) scale(${spineW/coverW})`;
+
+  const palette = { spine: book.spine || '#7d2a2a', accent: book.accent || '#c9a76d' };
+
+  const spineFace = document.createElement('div');
+  spineFace.className = 'face';
+  spineFace.style.width = (coverH / 5) + 'px';
+  spineFace.style.height = coverH + 'px';
+  spineFace.style.background = `linear-gradient(180deg, ${palette.spine}, ${shade(palette.spine, -20)}, ${palette.spine})`;
+  spineFace.style.transform = `rotateY(-90deg) translateZ(${coverW/2 - coverH/10}px) translateX(${-coverH/10}px)`;
+
+  const front = document.createElement('div');
+  front.className = 'face front';
+  front.style.width = coverW + 'px';
+  front.style.height = coverH + 'px';
+  front.style.transform = `translateZ(20px)`;
+  front.style.background = `linear-gradient(135deg, ${palette.spine} 0%, ${shade(palette.spine, -30)} 100%)`;
+  const cover = document.createElement('div');
+  cover.className = 'cover';
+  cover.innerHTML = `
+    <div class="cover-top" style="color:${palette.accent}">— ${escapeHtml(book.genre || '')} —</div>
+    <div>
+      <div class="cover-ornament" style="color:${palette.accent}">❦</div>
+      <div class="cover-title">${escapeHtml(book.title || '')}</div>
+      <div class="cover-ornament" style="color:${palette.accent}">❦</div>
+    </div>
+    <div class="cover-author">${escapeHtml(book.author || '')}</div>
+  `;
+  front.appendChild(cover);
+
+  const back = document.createElement('div');
+  back.className = 'face';
+  back.style.width = coverW + 'px';
+  back.style.height = coverH + 'px';
+  back.style.background = shade(palette.spine, -25);
+  back.style.transform = `translateZ(-20px) rotateY(180deg)`;
+
+  lifted.appendChild(spineFace);
+  lifted.appendChild(front);
+  lifted.appendChild(back);
+  stage.appendChild(lifted);
+
+  void lifted.offsetWidth;
+
+  requestAnimationFrame(() => {
+    const targetScale = Math.min(
+      (window.innerHeight * 0.65) / coverH,
+      (window.innerWidth * (window.innerWidth < 720 ? 0.85 : 0.45)) / coverW,
+      1.4
+    );
+    const offsetX = window.innerWidth < 720 ? 0 : -window.innerWidth * 0.1;
+    lifted.style.transform =
+      `translate(calc(-50% + ${offsetX}px), -50%) rotateY(0deg) scale(${targetScale})`;
+  });
+
+  document.getElementById('ipTitle').textContent = book.title;
+  document.getElementById('ipAuthor').textContent = book.author;
+  document.getElementById('ipYear').textContent = book.year;
+  document.getElementById('ipGenre').textContent = book.genre;
+  document.getElementById('ipDesc').textContent = book.description;
+  setTimeout(() => infoPanel.classList.add('active'), 600);
+
+  currentLifted = { el: lifted, source: bookEl, book };
+}
+
+function closeBookView() {
+  if (!currentLifted) return;
+  const { el, source } = currentLifted;
+  const rect = source.getBoundingClientRect();
+  const endX = rect.left + rect.width / 2;
+  const endY = rect.top + rect.height / 2;
+  const coverW = parseFloat(el.style.width);
+  const spineW = rect.width;
+  const initialX = endX - window.innerWidth/2;
+  const initialY = endY - window.innerHeight/2;
+
+  infoPanel.classList.remove('active');
+  el.style.transform =
+    `translate(calc(${initialX}px - 50%), calc(${initialY}px - 50%))
+     rotateY(-90deg) translateZ(${coverW/2}px) scale(${spineW/coverW})`;
+  setTimeout(() => {
+    el.remove();
+    source.style.opacity = '1';
+    bookshelfEl.classList.remove('dimmed');
+    stage.classList.remove('active');
+    currentLifted = null;
+    currentBookId = null;
+  }, 900);
+}
+
+backdrop.addEventListener('click', closeBookView);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (currentLifted) closeBookView();
+    else if (document.getElementById('formOverlay').classList.contains('active')) closeForm();
+  }
+});
+
+// ================== CRUD ==================
+function newBookId() {
+  const ids = books.map(b => parseInt(b.id, 10)).filter(n => !isNaN(n));
+  return String((ids.length ? Math.max(...ids) : 0) + 1);
+}
+
+function openEditForm(book) {
+  const isNew = !book;
+  document.getElementById('formTitle').textContent = isNew ? '新增書本' : '編輯書本';
+  const f = document.getElementById('bookForm');
+  f.id.value = isNew ? '' : book.id;
+  f.title.value = isNew ? '' : (book.title || '');
+  f.author.value = isNew ? '' : (book.author || '');
+  f.year.value = isNew ? new Date().getFullYear() : (book.year || '');
+  f.genre.value = isNew ? '' : (book.genre || '');
+  f.description.value = isNew ? '' : (book.description || '');
+  f.spine.value = isNew ? '#7d2a2a' : (book.spine || '#7d2a2a');
+  f.accent.value = isNew ? '#c9a76d' : (book.accent || '#c9a76d');
+  document.getElementById('formOverlay').classList.add('active');
+  setTimeout(() => f.title.focus(), 100);
+}
+
+function closeForm() {
+  document.getElementById('formOverlay').classList.remove('active');
+}
+
+function saveForm(e) {
+  e.preventDefault();
+  const f = e.target;
+  const data = {
+    id: f.id.value || newBookId(),
+    title: f.title.value.trim(),
+    author: f.author.value.trim(),
+    year: f.year.value.trim(),
+    genre: f.genre.value.trim(),
+    description: f.description.value.trim(),
+    spine: f.spine.value,
+    accent: f.accent.value
+  };
+  const existingIdx = books.findIndex(b => b.id === data.id);
+  if (existingIdx >= 0) { books[existingIdx] = data; toast(`已更新《${data.title}》`); }
+  else { books.push(data); toast(`已新增《${data.title}》`); }
+  isDirty = true;
+  saveToLocal();
+  updateStatus();
+  renderBookshelf();
+  closeForm();
+}
+
+function confirmDelete(book) {
+  if (!confirm(`確定要刪除《${book.title}》嗎？\n\n變更會儲存在本機，記得「⬇ 匯出 CSV」才能寫回檔案。`)) return;
+  books = books.filter(b => b.id !== book.id);
+  isDirty = true;
+  saveToLocal();
+  updateStatus();
+  renderBookshelf();
+  toast(`已刪除《${book.title}》`);
+}
+
+// info panel actions
+document.getElementById('ipEdit').addEventListener('click', () => {
+  if (!currentBookId) return;
+  const b = books.find(x => x.id === currentBookId);
+  closeBookView();
+  setTimeout(() => openEditForm(b), 600);
+});
+document.getElementById('ipDelete').addEventListener('click', () => {
+  if (!currentBookId) return;
+  const b = books.find(x => x.id === currentBookId);
+  closeBookView();
+  setTimeout(() => confirmDelete(b), 600);
+});
+
+// form
+document.getElementById('bookForm').addEventListener('submit', saveForm);
+document.getElementById('formCancel').addEventListener('click', closeForm);
+document.getElementById('formOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'formOverlay') closeForm();
+});
+
+// ================== DRAG TO REORDER ==================
+let dragState = null;
+let suppressClickId = null;
+
+function indexOfBookById(id) {
+  return books.findIndex(b => String(b.id) === String(id));
+}
+
+function startDrag() {
+  const ds = dragState;
+  const rect = ds.el.getBoundingClientRect();
+
+  const ghost = ds.el.cloneNode(true);
+  ghost.classList.remove('dragging-source');
+  ghost.classList.add('ghost-book');
+  ghost.style.left = rect.left + 'px';
+  ghost.style.top = rect.top + 'px';
+  ghost.style.width = rect.width + 'px';
+  ghost.style.height = rect.height + 'px';
+  ghost.style.transform = 'rotate(-5deg) scale(1.1)';
+  ghost.style.transition = 'transform 0.2s ease';
+  document.body.appendChild(ghost);
+
+  ds.ghost = ghost;
+  ds.ghostOffsetX = ds.startX - rect.left;
+  ds.ghostOffsetY = ds.startY - rect.top;
+  ds.started = true;
+
+  ds.el.classList.add('dragging-source');
+  document.body.classList.add('dragging-active');
+  document.getElementById('dropIndicator').classList.add('active');
+}
+
+function findInsertionTarget(clientX, clientY) {
+  const shelves = [...document.querySelectorAll('.shelf')];
+  if (!shelves.length) return null;
+  // pick shelf whose vertical range matches; else closest by y
+  let shelfIdx = -1;
+  let minDy = Infinity;
+  shelves.forEach((s, i) => {
+    const r = s.getBoundingClientRect();
+    if (clientY >= r.top && clientY <= r.bottom) {
+      shelfIdx = i;
+    } else {
+      const dy = Math.min(Math.abs(clientY - r.top), Math.abs(clientY - r.bottom));
+      if (dy < minDy) { minDy = dy; if (shelfIdx === -1) shelfIdx = i; }
+    }
+  });
+  if (shelfIdx === -1) {
+    // fallback: closest
+    shelves.forEach((s, i) => {
+      const r = s.getBoundingClientRect();
+      const dy = Math.min(Math.abs(clientY - r.top), Math.abs(clientY - r.bottom));
+      if (dy < minDy) { minDy = dy; shelfIdx = i; }
+    });
+  }
+  const targetShelf = shelves[shelfIdx];
+  const allBooks = [...document.querySelectorAll('.book')];
+  const booksOnShelf = [...targetShelf.querySelectorAll('.book')];
+
+  let beforeEl = null;
+  for (const b of booksOnShelf) {
+    const r = b.getBoundingClientRect();
+    const mid = r.left + r.width / 2;
+    if (clientX < mid) { beforeEl = b; break; }
+  }
+
+  let idx;
+  if (beforeEl) {
+    idx = allBooks.indexOf(beforeEl);
+  } else if (booksOnShelf.length) {
+    idx = allBooks.indexOf(booksOnShelf[booksOnShelf.length - 1]) + 1;
+  } else {
+    // empty shelf — find next shelf's first book
+    idx = allBooks.length;
+    for (let i = shelfIdx + 1; i < shelves.length; i++) {
+      const fb = shelves[i].querySelector('.book');
+      if (fb) { idx = allBooks.indexOf(fb); break; }
+    }
+    if (idx === allBooks.length) {
+      for (let i = shelfIdx - 1; i >= 0; i--) {
+        const lbs = shelves[i].querySelectorAll('.book');
+        if (lbs.length) { idx = allBooks.indexOf(lbs[lbs.length - 1]) + 1; break; }
+      }
+    }
+  }
+  return { idx, beforeEl, shelf: targetShelf };
+}
+
+function updateDropIndicator(target, sourceIdx) {
+  const ind = document.getElementById('dropIndicator');
+  if (!target) { ind.style.display = 'none'; return; }
+  // hide indicator on no-op targets
+  if (target.idx === sourceIdx || target.idx === sourceIdx + 1) {
+    ind.style.opacity = '0.3';
+  } else {
+    ind.style.opacity = '1';
+  }
+  ind.style.display = 'block';
+  if (target.beforeEl) {
+    const r = target.beforeEl.getBoundingClientRect();
+    ind.style.left = (r.left - 4) + 'px';
+    ind.style.top = r.top + 'px';
+    ind.style.height = r.height + 'px';
+  } else {
+    const booksOnShelf = [...target.shelf.querySelectorAll('.book')];
+    const sr = target.shelf.getBoundingClientRect();
+    if (booksOnShelf.length) {
+      const last = booksOnShelf[booksOnShelf.length - 1].getBoundingClientRect();
+      ind.style.left = (last.right + 1) + 'px';
+      ind.style.top = last.top + 'px';
+      ind.style.height = last.height + 'px';
+    } else {
+      ind.style.left = (sr.left + 18) + 'px';
+      ind.style.top = (sr.top + sr.height * 0.22) + 'px';
+      ind.style.height = (sr.height * 0.7) + 'px';
+    }
+  }
+}
+
+function performReorder(sourceId, sourceIdx, targetIdx, ghost) {
+  // FLIP: capture old positions
+  const oldRects = new Map();
+  document.querySelectorAll('.book').forEach(el => {
+    oldRects.set(el.dataset.id, el.getBoundingClientRect());
+  });
+
+  // mutate array
+  const item = books.splice(sourceIdx, 1)[0];
+  let insertAt = targetIdx;
+  if (targetIdx > sourceIdx) insertAt--;
+  books.splice(insertAt, 0, item);
+
+  isDirty = true;
+  saveToLocal();
+  updateStatus();
+  renderBookshelf();
+
+  // animate other books to new positions (FLIP)
+  document.querySelectorAll('.book').forEach(el => {
+    const id = el.dataset.id;
+    const old = oldRects.get(id);
+    if (!old) return;
+    const now = el.getBoundingClientRect();
+    const ddx = old.left - now.left;
+    const ddy = old.top - now.top;
+    if (Math.abs(ddx) < 0.5 && Math.abs(ddy) < 0.5) return;
+
+    if (id === sourceId) {
+      // hide briefly — ghost will land here
+      el.style.opacity = '0';
+    } else {
+      el.style.transition = 'none';
+      el.style.transform = `translate(${ddx}px, ${ddy}px)`;
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.3, 0.64, 1)';
+        el.style.transform = '';
+        el.addEventListener('transitionend', function clean() {
+          el.style.transition = '';
+          el.style.transform = '';
+          el.removeEventListener('transitionend', clean);
+        });
+      });
+    }
+  });
+
+  // animate ghost to new landing slot
+  const newSourceEl = document.querySelector(`.book[data-id="${CSS.escape(String(sourceId))}"]`);
+  if (newSourceEl && ghost) {
+    const tr = newSourceEl.getBoundingClientRect();
+    ghost.style.transition = 'all 0.5s cubic-bezier(0.34, 1.3, 0.64, 1)';
+    ghost.style.left = tr.left + 'px';
+    ghost.style.top = tr.top + 'px';
+    ghost.style.width = tr.width + 'px';
+    ghost.style.height = tr.height + 'px';
+    ghost.style.transform = 'rotate(0deg) scale(1)';
+    setTimeout(() => {
+      ghost.remove();
+      newSourceEl.style.opacity = '';
+    }, 520);
+  } else if (ghost) {
+    ghost.remove();
+  }
+
+  toast(`已將《${item.title}》移到新位置`);
+}
+
+function cancelDragWithBounce(ghost, sourceEl) {
+  // animate ghost back to source
+  if (!ghost) return;
+  if (sourceEl) {
+    const r = sourceEl.getBoundingClientRect();
+    ghost.style.transition = 'all 0.32s cubic-bezier(0.4, 0, 0.2, 1)';
+    ghost.style.left = r.left + 'px';
+    ghost.style.top = r.top + 'px';
+    ghost.style.width = r.width + 'px';
+    ghost.style.height = r.height + 'px';
+    ghost.style.transform = 'rotate(0deg) scale(1)';
+  }
+  setTimeout(() => ghost.remove(), 340);
+  if (sourceEl) sourceEl.classList.remove('dragging-source');
+}
+
+document.addEventListener('pointermove', (e) => {
+  if (!dragState) return;
+  const ds = dragState;
+  const dx = e.clientX - ds.startX;
+  const dy = e.clientY - ds.startY;
+  if (!ds.started) {
+    if (Math.hypot(dx, dy) > 8) startDrag();
+    else return;
+  }
+  ds.ghost.style.left = (e.clientX - ds.ghostOffsetX) + 'px';
+  ds.ghost.style.top = (e.clientY - ds.ghostOffsetY) + 'px';
+  const target = findInsertionTarget(e.clientX, e.clientY);
+  const sourceIdx = indexOfBookById(ds.id);
+  ds.targetIdx = target ? target.idx : null;
+  updateDropIndicator(target, sourceIdx);
+});
+
+function endDrag(e, cancelled) {
+  if (!dragState) return;
+  const ds = dragState;
+  dragState = null;
+
+  if (!ds.started) return; // it was just a click
+
+  suppressClickId = ds.id;
+  document.body.classList.remove('dragging-active');
+  const ind = document.getElementById('dropIndicator');
+  ind.classList.remove('active');
+  ind.style.display = 'none';
+
+  const sourceIdx = indexOfBookById(ds.id);
+  const targetIdx = ds.targetIdx;
+
+  if (!cancelled && targetIdx !== null && targetIdx !== sourceIdx && targetIdx !== sourceIdx + 1) {
+    performReorder(ds.id, sourceIdx, targetIdx, ds.ghost);
+  } else {
+    cancelDragWithBounce(ds.ghost, ds.el);
+  }
+}
+
+document.addEventListener('pointerup', (e) => endDrag(e, false));
+document.addEventListener('pointercancel', (e) => endDrag(e, true));
+
+// ================== IMPORT / EXPORT CSV ==================
+document.getElementById('btnImport').addEventListener('click', () => {
+  document.getElementById('fileInput').click();
+});
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = parseCSV(reader.result);
+      if (!parsed.length) { toast('CSV 內無資料'); return; }
+      // basic validation
+      const required = ['title','author','year','genre','description'];
+      const sample = parsed[0];
+      const missing = required.filter(k => !(k in sample));
+      if (missing.length) { toast('CSV 欄位錯誤：缺少 ' + missing.join(', ')); return; }
+      // ensure id, colors
+      parsed.forEach((p,i) => {
+        if (!p.id) p.id = String(i+1);
+        if (!p.spine) p.spine = '#7d2a2a';
+        if (!p.accent) p.accent = '#c9a76d';
+      });
+      books = parsed;
+      isDirty = false;
+      saveToLocal();
+      updateStatus(`已載入 ${books.length} 本書`);
+      hideBanner();
+      renderBookshelf();
+      toast('CSV 已載入');
+    } catch(err) {
+      toast('CSV 解析失敗：' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+  e.target.value = ''; // allow re-select same file
+});
+
+document.getElementById('btnExport').addEventListener('click', () => {
+  const text = serializeCSV(books);
+  const blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'books.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  isDirty = false;
+  saveToLocal();
+  updateStatus(`已匯出 ${books.length} 本書`);
+  toast('books.csv 已匯出，請覆蓋原檔案');
+});
+
+// ================== MODE TOGGLE ==================
+document.getElementById('btnView').addEventListener('click', () => setMode(false));
+document.getElementById('btnEdit').addEventListener('click', () => setMode(true));
+document.getElementById('btnAdd').addEventListener('click', () => openEditForm(null));
+document.getElementById('btnBind').addEventListener('click', () => {
+  if (fileHandle) {
+    if (confirm('解除與 books.csv 的連結？\n解除後變更會回到「需手動匯出」模式。')) unbindCSV();
+  } else {
+    pickAndBindCSV();
+  }
+});
+
+function setMode(edit) {
+  isEditMode = edit;
+  document.body.classList.toggle('edit-mode', edit);
+  document.getElementById('btnView').classList.toggle('active', !edit);
+  document.getElementById('btnEdit').classList.toggle('active', edit);
+  document.getElementById('footerHint').textContent = edit
+    ? '點 擊 編 輯　|　拖 移 排 序　|　點 × 刪 除'
+    : '點 擊 翻 閱　|　拖 移 排 序';
+}
+
+// ================== UI HELPERS ==================
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+function showBanner(msg) {
+  const b = document.getElementById('banner');
+  b.textContent = msg;
+  b.classList.remove('actionable');
+  b.onclick = null;
+  b.classList.add('show');
+}
+function showBannerAction(msg, onClick) {
+  const b = document.getElementById('banner');
+  b.textContent = msg;
+  b.classList.add('actionable');
+  b.onclick = onClick;
+  b.classList.add('show');
+}
+function hideBanner() {
+  const b = document.getElementById('banner');
+  b.classList.remove('show');
+  b.classList.remove('actionable');
+  b.onclick = null;
+}
+function updateStatus(msg) {
+  const tag = document.getElementById('statusTag');
+  tag.classList.toggle('dirty', isDirty);
+  if (msg) tag.textContent = isDirty ? msg + '（未匯出）' : msg;
+  else tag.textContent = `共 ${books.length} 本書` + (isDirty ? '（未匯出）' : '');
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// warn before leaving if dirty
+window.addEventListener('beforeunload', (e) => {
+  if (isDirty) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// ================== BOOT ==================
+loadInitialData();
+</script>
+</body>
+</html>
