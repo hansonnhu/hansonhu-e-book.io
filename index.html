@@ -737,7 +737,7 @@
 
         <h3>🌐 固定 CSV</h3>
         <ol>
-          <li>本頁會固定讀取 <kbd>http://100.101.15.56:8080/books.csv</kbd></li>
+          <li>本頁會固定讀取 <kbd>books.csv</kbd></li>
           <li>請保持該電腦的 Python HTTP server 開啟</li>
           <li>若在外網使用，兩端需連上同一個 Tailscale 網路</li>
         </ol>
@@ -844,8 +844,8 @@
 // 固定讀取 Tailscale 主機上的 CSV。請先在該電腦執行：
 // cd D:\\desktop\\ebook.db
 // python server.py
-const CSV_URL = 'http://100.101.15.56:8080/books.csv';
-const SAVE_URL = 'http://100.101.15.56:8080/save';
+const CSV_URL = 'https://richard-customs-mistress-administered.trycloudflare.com/books.csv';
+const SAVE_URL = 'https://richard-customs-mistress-administered.trycloudflare.com/save';
 
 // ================== STATE ==================
 let books = [];
