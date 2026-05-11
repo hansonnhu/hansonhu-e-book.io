@@ -80,6 +80,10 @@
     background: linear-gradient(180deg, #6a4830, #4d3220);
     transform: translateY(-1px);
   }
+  /* 固定由遠端 CSV 載入，避免使用者誤按手動連結/匯入/匯出 */
+  #btnBind, #btnImport, #btnExport {
+    display: none;
+  }
   .toolbar button.active {
     background: linear-gradient(180deg, #a67843, #74532a);
     box-shadow: 0 0 0 2px var(--gold), inset 0 2px 4px rgba(0,0,0,0.3);
@@ -731,15 +735,14 @@
         <h2>使 用 指 南</h2>
         <div class="help-sub">— Quick Start —</div>
 
-        <h3>📎 第一次使用</h3>
+        <h3>🌐 固定 CSV</h3>
         <ol>
-          <li>點上方「<kbd>📎 連結 CSV</kbd>」按鈕</li>
-          <li>在彈出視窗選擇本資料夾的 <kbd>books.csv</kbd></li>
-          <li>瀏覽器詢問權限時點「儲存變更」授權寫入</li>
+          <li>本頁會固定讀取 <kbd>http://100.101.15.56:8080/books.csv</kbd></li>
+          <li>請保持該電腦的 Python HTTP server 開啟</li>
+          <li>若在外網使用，兩端需連上同一個 Tailscale 網路</li>
         </ol>
         <div class="help-note">
-          連結後按鈕變綠色「✓ 已連結」。<br>
-          之後 <b>拖移、編輯、刪除</b> 都會即時寫回 books.csv 檔案，無需手動匯出。
+          目前設定為<b>固定讀取 CSV</b>。新增、編輯、刪除會先存在瀏覽器本機；若要直接寫回遠端 CSV，需要再加 Python 後端 API。
         </div>
 
         <h3>📖 閱讀</h3>
@@ -837,6 +840,11 @@
 
 <script>
 'use strict';
+
+// 固定讀取 Tailscale 主機上的 CSV。請先在該電腦執行：
+// cd D:\\desktop\\ebook.db
+// python -m http.server 8080 --bind 100.101.15.56
+const CSV_URL = 'http://100.101.15.56:8080/books.csv';
 
 // ================== STATE ==================
 let books = [];
@@ -1094,31 +1102,10 @@ function updateBindUI() {
 async function loadInitialData() {
   updateBindUI();
 
-  // 1) Try to restore previously-bound file (auto-sync mode)
-  const r1 = await tryRestoreHandle();
-  if (r1 === 'restored') { renderBookshelf(); return; }
-
-  // 2) Otherwise prefer localStorage if it has unsaved edits
-  const lsDirty = localStorage.getItem(LS_DIRTY) === '1';
-  if (lsDirty) {
-    const cached = localStorage.getItem(LS_KEY);
-    if (cached) {
-      try {
-        books = JSON.parse(cached);
-        isDirty = true;
-        updateStatus();
-        if (SUPPORTS_FS && r1 !== 'needs-permission') {
-          showBannerAction('🔗 點「📎 連結 CSV」啟用即時寫回到 books.csv，否則僅暫存於本機。', () => pickAndBindCSV());
-        }
-        renderBookshelf();
-        return;
-      } catch(e) {}
-    }
-  }
-
-  // 3) Try fetch (works when served via HTTP)
+  // 固定從 Tailscale 主機讀取 books.csv。
+  // 加上時間戳避免瀏覽器快取舊 CSV。
   try {
-    const r = await fetch('books.csv', { cache: 'no-cache' });
+    const r = await fetch(CSV_URL + '?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const text = await r.text();
     books = parseCSV(text);
@@ -1126,40 +1113,29 @@ async function loadInitialData() {
     isDirty = false;
     localStorage.setItem(LS_KEY, JSON.stringify(books));
     localStorage.setItem(LS_DIRTY, '0');
-    updateStatus(`已載入 ${books.length} 本書`);
-    if (SUPPORTS_FS && r1 !== 'needs-permission') {
-      showBannerAction('🔗 點「📎 連結 CSV」啟用即時寫回到 books.csv（拖移／編輯／刪除會直接更新檔案）', () => pickAndBindCSV());
-    }
+    hideBanner();
+    updateStatus(`已從固定 CSV 載入 ${books.length} 本書`);
     renderBookshelf();
     return;
   } catch(e) {
-    console.warn('fetch books.csv 失敗:', e);
+    console.warn('讀取固定 CSV 失敗:', e);
+    showBanner(`無法讀取固定 CSV：${CSV_URL}。請確認 Tailscale 已連線、Python http.server 正在執行，且瀏覽器允許讀取。`);
   }
 
-  // 4) localStorage cache (read-only)
+  // 若遠端 CSV 讀取失敗，退回上次成功載入的本機快取，避免畫面空白。
   const cached = localStorage.getItem(LS_KEY);
   if (cached) {
     try {
       books = JSON.parse(cached);
-      isDirty = localStorage.getItem(LS_DIRTY) === '1';
-      updateStatus();
-      if (SUPPORTS_FS && r1 !== 'needs-permission') {
-        showBannerAction('🔗 無法自動讀取 books.csv。點此連結檔案以啟用即時寫回。', () => pickAndBindCSV());
-      } else if (!SUPPORTS_FS) {
-        showBanner('此瀏覽器不支援自動寫檔。請用「⬆ 載入 CSV」載入，變更後「⬇ 匯出 CSV」覆蓋檔案。');
-      }
+      isDirty = true;
+      localStorage.setItem(LS_DIRTY, '1');
+      updateStatus(`使用上次快取資料（${books.length} 本）`);
       renderBookshelf();
       return;
     } catch(e) {}
   }
 
-  // 5) empty
   books = [];
-  if (SUPPORTS_FS) {
-    showBannerAction('🔗 找不到資料，點此連結 books.csv 以載入並啟用即時寫回。', () => pickAndBindCSV());
-  } else {
-    showBanner('找不到 books.csv，請點「⬆ 載入 CSV」載入，或「＋ 新增書本」建立新書。');
-  }
   updateStatus('尚無資料');
   renderBookshelf();
 }
